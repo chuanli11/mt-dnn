@@ -17,6 +17,7 @@ from mt_dnn.batcher import BatchGen
 from mt_dnn.model import MTDNNModel
 from pytorch_pretrained_bert.modeling import BertModel
 from pytorch_pretrained_bert.modeling import BertConfig
+import time
 
 def model_config(parser):
     parser.add_argument('--update_bert_opt',  default=0, type=int)
@@ -60,7 +61,7 @@ def data_config(parser):
 def train_config(parser):
     parser.add_argument('--cuda', type=bool, default=torch.cuda.is_available(),
                         help='whether to use GPU acceleration.')
-    parser.add_argument('--log_per_updates', type=int, default=500)
+    parser.add_argument('--log_per_updates', type=int, default=100)
     parser.add_argument('--epochs', type=int, default=5)
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--batch_size_eval', type=int, default=8)
@@ -309,14 +310,18 @@ def main():
         if args.mix_opt < 1:
             random.shuffle(all_indices)
 
+        lambda_start = time.time()
         for i in range(len(all_indices)):
             task_id = all_indices[i]
             batch_meta, batch_data= next(all_iters[task_id])
             model.update(batch_meta, batch_data)
             if (model.updates) % args.log_per_updates == 0 or model.updates == 1:
+                lambda_end = time.time()
                 logger.info('Task [{0:2}] updates[{1:6}] train loss[{2:.5f}] remaining[{3}]'.format(task_id,
                     model.updates, model.train_loss.avg,
                     str((datetime.now() - start) / (i + 1) * (len(all_indices) - i - 1)).split('.')[0]))
+                print("time: " + str(lambda_end - lambda_start) + " sec")
+                lambda_start = lambda_end
 
         for idx, dataset in enumerate(args.test_datasets):
             prefix = dataset.split('_')[0]

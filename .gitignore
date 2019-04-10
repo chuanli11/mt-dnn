@@ -134,3 +134,5 @@ bert_models
 run_baseline*
 mt_dnn_models
 *pyc
+
+venv-mt-dnn/*
